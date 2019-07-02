@@ -31,7 +31,7 @@ function generateCards(dataResults) {
     .map(
       (card, index) => `<div class="card" id="user-${index}" onclick="handleClick(event)">
       <div class="card-img-container">
-          <img class="card-img" src="${card.picture.thumbnail}" alt="profile picture">
+          <img class="card-img" src="${card.picture.medium}" alt="profile picture">
       </div>
       <div class="card-info-container">
           <h3 id="name" class="card-name cap">${`${card.name.first} ${card.name.last}`}</h3>
@@ -60,7 +60,7 @@ function generateModals(dataResults) {
     <div class="modal">
         <button type="button" id="modal-close-btn" class="modal-close-btn" onclick="handleClick(event)"><strong>X</strong></button>
         <div class="modal-info-container">
-            <img class="modal-img" src="${modal.picture.medium}" alt="profile picture">
+            <img class="modal-img" src="${modal.picture.large}" alt="profile picture">
             <h3 id="name" class="modal-name cap">${`${modal.name.first} ${modal.name.last}`}</h3>
             <p class="modal-text">${modal.email}</p>
             <p class="modal-text cap">${`${city}, ${state}`}</p>
@@ -71,7 +71,7 @@ function generateModals(dataResults) {
         </div>
     </div>
 
-    <div class="modal-btn-container">
+    <div class="modal-btn-container" onclick="handleClick(event)">
         <button type="button" id="modal-prev" class="modal-prev btn">Prev</button>
         <button type="button" id="modal-next" class="modal-next btn">Next</button>
     </div>
@@ -115,6 +115,18 @@ function handleClick(event) {
     || event.target.id === 'modal-close-btn'
   ) {
     closeModalView(activeModal);
+  } else if (event.target.matches('#modal-prev')) {
+    if (activeModal.previousSibling !== null) {
+      hideModal(activeModal);
+      activeModal = activeModal.previousSibling;
+      showModal(activeModal);
+    }
+  } else if (event.target.matches('#modal-next')) {
+    if (activeModal.nextSibling !== null) {
+      hideModal(activeModal);
+      activeModal = activeModal.nextSibling;
+      showModal(activeModal);
+    }
   }
 }
 // TO DO there needs to be a difference between clicking next/prev and closes the modal alltogether...
