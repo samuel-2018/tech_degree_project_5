@@ -6,7 +6,7 @@ const body = document.querySelector('body');
 fetch('https://randomuser.me/api/?results=12&nat=us&inc=picture,name,email,location,cell,dob')
   .then(parseJSON)
   .then(data => generateCards(data.results))
-  .then(data => generateModals(data));
+  .then(dataResults => generateModals(dataResults));
 // ------------------------------------------
 //  HELPER FUNCTIONS
 // ------------------------------------------
@@ -26,10 +26,10 @@ function parseJSON(response) {
 }
 
 // use map to turn data into cards to insert into gallery div
-function generateCards(data) {
-  const cards = data
+function generateCards(dataResults) {
+  const cards = dataResults
     .map(
-      (card, index) => `<div class="card" id="user-${index}">
+      (card, index) => `<div class="card" id="user-${index}" onclick="handleClick(event)">
       <div class="card-img-container">
           <img class="card-img" src="${card.picture.thumbnail}" alt="profile picture">
       </div>
@@ -44,20 +44,21 @@ function generateCards(data) {
   gallery.innerHTML = cards;
   // console.log(data);
 
-  return data;
+  return dataResults;
 }
 
 // use map to turn data into modals(hidden) to insert into gallery div
-function generateModals(data) {
-  const modals = data
+function generateModals(dataResults) {
+  const modals = dataResults
     .map((modal, index) => {
       const {
-        city, state, street, postalcode,
+        city, state, street, postcode,
       } = modal.location;
-      const dob = modal.dob.date.replace(/(^\d{4})(?:-(\d{2})-)(?:-(\d{2}(?!\d)))/, '$2/$3/$1');
-      return ` <div class="modal-container user-${index}" id="modal-${index}>
+      const dob = modal.dob.date.replace(/(^\d{4})(?:-(\d{2})-)(\d{2})(?:.*)/, '$2/$3/$1');
+
+      return `<div class="modal-container user-${index}" id="modal-${index}" style="display:none;" onclick="handleClick(event)">
     <div class="modal">
-        <button type="button" id="modal-close-btn" class="modal-close-btn"><strong>X</strong></button>
+        <button type="button" id="modal-close-btn" class="modal-close-btn" onclick="handleClick(event)"><strong>X</strong></button>
         <div class="modal-info-container">
             <img class="modal-img" src="${modal.picture.medium}" alt="profile picture">
             <h3 id="name" class="modal-name cap">${`${modal.name.first} ${modal.name.last}`}</h3>
@@ -65,7 +66,7 @@ function generateModals(data) {
             <p class="modal-text cap">${`${city}, ${state}`}</p>
             <hr>
             <p class="modal-text">(555) 555-5555</p>
-            <p class="modal-text">${`${street}, ${city}, ${state} ${postalcode}`}</p>
+            <p class="modal-text">${`${street}, ${city}, ${state} ${postcode}`}</p>
             <p class="modal-text">Birthday: ${dob}</p>
         </div>
     </div>
@@ -77,14 +78,16 @@ function generateModals(data) {
 </div>`;
     })
     .join('');
-  body.append(modals);
+  const modalsWrapper = document.createElement('div');
+  modalsWrapper.innerHTML = modals;
+  body.append(modalsWrapper);
 }
 // ------------------------------------------
 //  EVENT LISTENERS
 // ------------------------------------------
 
 // event listener on the gallery div (through bubbling, will listen for clicks on items with class of card)
-gallery.addEventListener('click', handleClick);
+// gallery.addEventListener('click', handleClick);
 
 // the callback for click listener on gallery
 // opens a modal window for the click target
@@ -95,15 +98,20 @@ gallery.addEventListener('click', handleClick);
 let modalActive = false;
 let activeModal = null;
 function handleClick(event) {
+  // Stop event bubbling before it gets to the 'gallery' listener.
+  event.stopPropagation();
   // Shows a modal.
   // TO DO replace the '*' with a class name on card child elements: card-body
-  if (event.target.matches('.card *') && modalActive === false) {
-    const user = event.target.id;
+  // console.log(event.currentTarget);
+  if (event.currentTarget.matches('.modal-close-btn')) {
+    closeModalView(activeModal);
+  } else if (event.currentTarget.matches('.card') && modalActive === false) {
+    const user = event.currentTarget.id;
     activeModal = document.querySelector(`.modal-container.${user}`);
     showModal(activeModal);
   } else if (
     // Close modal if user clicks outside of modal or on close btn
-    (event.target.matches(':not(.modal *)') && modalActive === true)
+    (event.target.matches('.modal-container') && modalActive === true)
     || event.target.id === 'modal-close-btn'
   ) {
     closeModalView(activeModal);
