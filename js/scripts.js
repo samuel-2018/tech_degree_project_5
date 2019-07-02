@@ -5,15 +5,24 @@ const body = document.querySelector('body');
 // API request for random user data
 fetch('https://randomuser.me/api/?results=12&nat=us&inc=picture,name,email,location,cell,dob')
   .then(parseJSON)
-  .then(generateCards)
-  .then(generateModals);
+  .then(data => generateCards(data.results))
+  .then(data => generateModals(data));
 // ------------------------------------------
 //  HELPER FUNCTIONS
 // ------------------------------------------
 // convert data to json
 function parseJSON(response) {
-  const responseJson = response.json();
-  return responseJson.results;
+  /**
+   * "The json() method of the Body mixin takes
+   * a Response stream and reads it to completion.
+   * It returns a promise that resolves with the
+   * result of parsing the body text as JSON."
+   * https://developer.mozilla.org/en-US/docs/Web/API/Body/json
+   *
+   * IMPORTANT: It must only be acted upon by .then().
+   * Anything else will interfere with what it is doing.
+   */
+  return response.json();
 }
 
 // use map to turn data into cards to insert into gallery div
@@ -33,6 +42,8 @@ function generateCards(data) {
     )
     .join('');
   gallery.innerHTML = cards;
+  // console.log(data);
+
   return data;
 }
 
