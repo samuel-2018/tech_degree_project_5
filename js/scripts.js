@@ -10,7 +10,8 @@ fetch('https://randomuser.me/api/?results=12&nat=us&inc=picture,name,email,locat
   .then(parseJSON)
   .then(data => generateCards(data.results))
   .then(dataResults => generateModals(dataResults))
-  .then(generateList);
+  .then(generateList)
+  .catch(console.log('Something went wrong.'));
 
 // ------------------------------------------
 //  FETCH HELPER FUNCTION
@@ -113,93 +114,93 @@ searchContainer.innerHTML = `<form action="#" method="get">
 // ------------------------------------------
 
 function handleClick(event) {
-  // TO DO Convert functions into an object?
-  function showModal() {
-    handleClick.activeModal.style.display = 'block';
-    handleClick.modalActive = true;
-  }
+  // Prevents event from being captured an extra time.
+  event.stopPropagation();
 
-  function hideModal() {
-    handleClick.activeModal.style.display = 'none';
-  }
+  const modalAction = {
+    show() {
+      handleClick.activeModal.style.display = 'block';
+      handleClick.modalActive = true;
+    },
 
-  function closeModalView() {
-    hideModal();
-    handleClick.modalActive = false;
-  }
-  function getModal() {
-    // Gets the id from the clicked card.
-    const employee = event.currentTarget.id;
-    // Uses id to select matching class name on the modal.
-    const modal = document.querySelector(`.modal-container.${employee}`);
-    return modal;
-  }
-  function updateModal(modal) {
-    handleClick.activeModal = modal;
-  }
-  // Closes modal upon btn click.
+    hide() {
+      handleClick.activeModal.style.display = 'none';
+    },
+
+    closeCarousel() {
+      modalAction.hide();
+      handleClick.modalActive = false;
+    },
+
+    get() {
+      // Gets the id from the clicked card.
+      const employee = event.currentTarget.id;
+      // Uses id to select matching class name on the modal.
+      const modal = document.querySelector(`.modal-container.${employee}`);
+      return modal;
+    },
+
+    update(modal) {
+      // Stores reference to active modal.
+      handleClick.activeModal = modal;
+    },
+
+    go(direction) {
+      let continueModalSearch = true;
+      let lastModal = handleClick.activeModal;
+      // Searches
+      while (continueModalSearch) {
+        // Is there a modal that direction?
+        if (lastModal[`${direction}Sibling`] !== null) {
+          // Is the modal part of the user's search term?
+          if (lastModal[`${direction}Sibling`].matches('.isResult')) {
+            // Found a match. Now do updates.
+            modalAction.hide();
+            modalAction.update(lastModal[`${direction}Sibling`]);
+            modalAction.show();
+            continueModalSearch = false;
+          } else {
+            lastModal = lastModal[`${direction}Sibling`];
+          }
+        } else {
+          // Nothing left that direction.
+          continueModalSearch = false;
+        }
+      }
+    },
+  };
+
+  // Closes modal upon button click.
   if (event.currentTarget.matches('.modal-close-btn')) {
-    closeModalView();
+    modalAction.closeCarousel();
 
     // Shows modal.
   } else if (event.currentTarget.matches('.card') && handleClick.modalActive === false) {
-    updateModal(getModal());
-    showModal();
+    modalAction.update(modalAction.get());
+    modalAction.show();
 
     // Closes modal upon outside click.
   } else if (
     (event.target.matches('.modal-container') && handleClick.modalActive === true)
     || event.target.id === 'modal-close-btn'
   ) {
-    closeModalView();
+    modalAction.closeCarousel();
 
     // Shows prev modal.
   } else if (event.target.matches('#modal-prev')) {
-    let continueModalSearch = true;
-    let lastModal = handleClick.activeModal;
-    while (continueModalSearch) {
-      if (lastModal.previousSibling !== null) {
-        if (lastModal.previousSibling.matches('.isResult')) {
-          hideModal();
-          updateModal(lastModal.previousSibling);
-          showModal();
-          continueModalSearch = false;
-        } else {
-          lastModal = lastModal.previousSibling;
-        }
-      } else {
-        // Nothing left that direction.
-        continueModalSearch = false;
-      }
-    }
+    modalAction.go('previous');
 
     // Shows next modal.
   } else if (event.target.matches('#modal-next')) {
-    let continueModalSearch = true;
-    let lastModal = handleClick.activeModal;
-    while (continueModalSearch) {
-      if (lastModal.nextSibling !== null) {
-        if (lastModal.nextSibling.matches('.isResult')) {
-          hideModal();
-          updateModal(lastModal.nextSibling);
-          showModal();
-          continueModalSearch = false;
-        } else {
-          lastModal = lastModal.nextSibling;
-        }
-      } else {
-        // Nothing left that direction.
-        continueModalSearch = false;
-      }
-    }
+    modalAction.go('next');
   }
 }
 
 /**
+ * Static variables for 'handleClick()':
  * Within the function, these have to be
  * prefaced with 'handleClick' NOT 'this'.
  */
-// Static variables for handleClick()
 handleClick.modalActive = false;
 handleClick.activeModal = null;
 
@@ -211,10 +212,6 @@ form.addEventListener('submit', function handleSearch(event) {
   const search = elements[0].value.toLowerCase();
   showSearchResults(search);
 });
-
-// ------------------------------------------
-//  HELPER FUNCTIONS
-// ------------------------------------------
 
 let list = null;
 function generateList() {
@@ -251,14 +248,5 @@ function clearAll() {
 }
 
 // ------------------------------------------
-//   NOTES
+//  HELPER FUNCTIONS
 // ------------------------------------------
-
-// notes...about search...
-// if you were working with a large amount of data,
-// you would use a text or array search/find method that then
-// created an array of matches
-// any display method would then use that array of data to display
-// so, this is a seperation of data and display
-// but if one is using the html/dom to store the data,
-// then they are tightly coupled
