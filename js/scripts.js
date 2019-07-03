@@ -1,17 +1,21 @@
-// select dom elements
+// Select dom elements.
 const gallery = document.querySelector('#gallery');
 const body = document.querySelector('body');
 
-// API request for random user data
+// ------------------------------------------
+//  FETCH FUNCTION
+// ------------------------------------------
+
 fetch('https://randomuser.me/api/?results=12&nat=us&inc=picture,name,email,location,cell,dob')
   .then(parseJSON)
   .then(data => generateCards(data.results))
   .then(dataResults => generateModals(dataResults))
   .then(generateList);
+
 // ------------------------------------------
-//  HELPER FUNCTIONS
+//  FETCH HELPER FUNCTION
 // ------------------------------------------
-// convert data to json
+
 function parseJSON(response) {
   /**
    * "The json() method of the Body mixin takes
@@ -20,20 +24,23 @@ function parseJSON(response) {
    * result of parsing the body text as JSON."
    * https://developer.mozilla.org/en-US/docs/Web/API/Body/json
    *
-   * IMPORTANT: It must only be acted upon by .then().
+   * IMPORTANT: It must only be acted upon by '.then()'.
    * Anything else will interfere with what it is doing.
    */
   return response.json();
 }
 
-// use map to turn data into cards to insert into gallery div
+// ------------------------------------------
+//  GENERATE HTML
+// ------------------------------------------
+
 function generateCards(dataResults) {
   const cards = dataResults
     .map(
       (
         card,
         index,
-      ) => `<div class="card isResult js-searchDisplay" id="user-${index}" onclick="handleClick(event)">
+      ) => `<div class="card isResult js-searchDisplay" id="employee-${index}" onclick="handleClick(event)">
       <div class="card-img-container">
           <img class="card-img" src="${card.picture.medium}" alt="profile picture">
       </div>
@@ -46,28 +53,36 @@ function generateCards(dataResults) {
     )
     .join('');
   gallery.innerHTML = cards;
-  // console.log(data);
 
+  // Returned data will be used by next '.then()'.
   return dataResults;
 }
 
-// use map to turn data into modals(hidden) to insert into gallery div
 function generateModals(dataResults) {
   const modals = dataResults
     .map((modal, index) => {
       const {
-        city, state, street, postcode,
-      } = modal.location;
-      const { first, last } = modal.name;
+        email,
+        location: {
+          city, state, street, postcode,
+        },
+        name: { first, last },
+        picture: { large },
+      } = modal;
+
       const dob = modal.dob.date.replace(/(^\d{4})(?:-(\d{2})-)(\d{2})(?:.*)/, '$2/$3/$1');
 
-      return `<div class="modal-container user-${index} isResult js-searchDisplay" id="modal-${index}" style="display:none;" onclick="handleClick(event)">
+      // Modals will be hidden until needed.
+
+      // TO DO add comments to explain classe etc... and revise class names and ids... remove some? rename some?
+
+      return `<div class="modal-container employee-${index} isResult js-searchDisplay" id="modal-${index}" style="display:none;" onclick="handleClick(event)">
     <div class="modal">
         <button type="button" id="modal-close-btn" class="modal-close-btn" onclick="handleClick(event)"><strong>X</strong></button>
         <div class="modal-info-container">
-            <img class="modal-img" src="${modal.picture.large}" alt="profile picture">
+            <img class="modal-img" src="${large}" alt="profile picture">
             <h3 id="name" class="modal-name cap js-name">${`${first} ${last}`}</h3>
-            <p class="modal-text">${modal.email}</p>
+            <p class="modal-text">${email}</p>
             <p class="modal-text cap">${`${city}, ${state}`}</p>
             <hr>
             <p class="modal-text">(555) 555-5555</p>
@@ -75,7 +90,6 @@ function generateModals(dataResults) {
             <p class="modal-text">Birthday: ${dob}</p>
         </div>
     </div>
-
     <div class="modal-btn-container" onclick="handleClick(event)">
         <button type="button" id="modal-prev" class="modal-prev btn">Prev</button>
         <button type="button" id="modal-next" class="modal-next btn">Next</button>
@@ -87,46 +101,68 @@ function generateModals(dataResults) {
   modalsWrapper.innerHTML = modals;
   body.append(modalsWrapper);
 }
+
+const searchContainer = document.querySelector('.search-container');
+searchContainer.innerHTML = `<form action="#" method="get">
+    <input type="search" id="search-input" class="search-input" placeholder="Search...">
+    <input type="submit" value="&#x1F50D;" id="search-submit" class="search-submit">
+  </form>`;
+
 // ------------------------------------------
-//  EVENT LISTENERS
+//  EVENT HANDLERS
 // ------------------------------------------
 
-// the callback for click listener on gallery
-// opens a modal window for the click target
-// has more information
-// a close butn (changes the modal's dislay to hide)
-// also closes when user clicks anywhere outside modal
-// btns for prev and next cards
-let modalActive = false;
-let activeModal = null;
 function handleClick(event) {
-  // Stop event bubbling before it gets to the 'gallery' listener.
-  event.stopPropagation();
-  // Shows a modal.
+  // TO DO Convert functions into an object?
+  function showModal() {
+    handleClick.activeModal.style.display = 'block';
+    handleClick.modalActive = true;
+  }
+
+  function hideModal() {
+    handleClick.activeModal.style.display = 'none';
+  }
+
+  function closeModalView() {
+    hideModal();
+    handleClick.modalActive = false;
+  }
+  function getModal() {
+    // Gets the id from the clicked card.
+    const employee = event.currentTarget.id;
+    // Uses id to select matching class name on the modal.
+    const modal = document.querySelector(`.modal-container.${employee}`);
+    return modal;
+  }
+  function updateModal(modal) {
+    handleClick.activeModal = modal;
+  }
+  // Closes modal upon btn click.
   if (event.currentTarget.matches('.modal-close-btn')) {
-    closeModalView(activeModal);
-  } else if (event.currentTarget.matches('.card') && modalActive === false) {
-    const user = event.currentTarget.id;
-    activeModal = document.querySelector(`.modal-container.${user}`);
-    showModal(activeModal);
+    closeModalView();
+
+    // Shows modal.
+  } else if (event.currentTarget.matches('.card') && handleClick.modalActive === false) {
+    updateModal(getModal());
+    showModal();
+
+    // Closes modal upon outside click.
   } else if (
-    // Close modal if user clicks outside of modal or on close btn
-    (event.target.matches('.modal-container') && modalActive === true)
+    (event.target.matches('.modal-container') && handleClick.modalActive === true)
     || event.target.id === 'modal-close-btn'
   ) {
-    closeModalView(activeModal);
-  } else if (event.target.matches('#modal-prev')) {
-    // TO DO  need a loop that will keep looking for
-    // an element that has class of isResult
+    closeModalView();
 
+    // Shows prev modal.
+  } else if (event.target.matches('#modal-prev')) {
     let continueModalSearch = true;
-    let lastModal = activeModal;
+    let lastModal = handleClick.activeModal;
     while (continueModalSearch) {
       if (lastModal.previousSibling !== null) {
         if (lastModal.previousSibling.matches('.isResult')) {
-          hideModal(activeModal);
-          activeModal = lastModal.previousSibling;
-          showModal(activeModal);
+          hideModal();
+          updateModal(lastModal.previousSibling);
+          showModal();
           continueModalSearch = false;
         } else {
           lastModal = lastModal.previousSibling;
@@ -136,15 +172,17 @@ function handleClick(event) {
         continueModalSearch = false;
       }
     }
+
+    // Shows next modal.
   } else if (event.target.matches('#modal-next')) {
     let continueModalSearch = true;
-    let lastModal = activeModal;
+    let lastModal = handleClick.activeModal;
     while (continueModalSearch) {
       if (lastModal.nextSibling !== null) {
         if (lastModal.nextSibling.matches('.isResult')) {
-          hideModal(activeModal);
-          activeModal = lastModal.nextSibling;
-          showModal(activeModal);
+          hideModal();
+          updateModal(lastModal.nextSibling);
+          showModal();
           continueModalSearch = false;
         } else {
           lastModal = lastModal.nextSibling;
@@ -157,27 +195,15 @@ function handleClick(event) {
   }
 }
 
-function showModal(modal) {
-  modal.style.display = 'block';
-  modalActive = true;
-}
-//
-function hideModal(modal) {
-  modal.style.display = 'none';
-}
-//
-function closeModalView(modal) {
-  hideModal(modal);
-  modalActive = false;
-}
+/**
+ * Within the function, these have to be
+ * prefaced with 'handleClick' NOT 'this'.
+ */
+// Static variables for handleClick()
+handleClick.modalActive = false;
+handleClick.activeModal = null;
 
-const searchContainer = document.querySelector('.search-container');
-
-searchContainer.innerHTML = `<form action="#" method="get">
-    <input type="search" id="search-input" class="search-input" placeholder="Search...">
-    <input type="submit" value="&#x1F50D;" id="search-submit" class="search-submit">
-  </form>`;
-
+// Search listener
 const form = document.querySelector('.search-container > form');
 form.addEventListener('submit', function handleSearch(event) {
   event.preventDefault();
@@ -186,12 +212,15 @@ form.addEventListener('submit', function handleSearch(event) {
   showSearchResults(search);
 });
 
+// ------------------------------------------
+//  HELPER FUNCTIONS
+// ------------------------------------------
+
 let list = null;
 function generateList() {
   // List of all cards and modals.
   // (querySelectorAll returns a NodeList, which has to be converted to an array.)
   list = Array.from(document.querySelectorAll('.js-searchDisplay'));
-  console.log(list);
 }
 
 function showSearchResults(search) {
@@ -220,12 +249,10 @@ function clearAll() {
     modal.className = modal.className.replace(' isResult', '');
   });
 }
-// Search (searches names)
-// Uses the data that site already has
-// Handle this like with project 2
-// control display based on clases added or removed
-// have a global reset that hides all the cards
-// then a class is added to those that match the search
+
+// ------------------------------------------
+//   NOTES
+// ------------------------------------------
 
 // notes...about search...
 // if you were working with a large amount of data,
