@@ -11,7 +11,9 @@ fetch('https://randomuser.me/api/?results=12&nat=us&inc=picture,name,email,locat
   .then(data => generateCards(data.results))
   .then(dataResults => generateModals(dataResults))
   .then(generateList)
-  .catch(console.log('Something went wrong.'));
+  .catch((error) => {
+    gallery.innerHTML = `Something went wrong: "${error}"`;
+  });
 
 // ------------------------------------------
 //  FETCH HELPER FUNCTION
@@ -41,7 +43,7 @@ function generateCards(dataResults) {
       (
         card,
         index,
-      ) => `<div class="card isResult js-searchDisplay" id="employee-${index}" onclick="handleClick(event)">
+      ) => `<div class="card js-result js-searchDisplay" id="employee-${index}" onclick="handleClick(event)">
       <div class="card-img-container">
           <img class="card-img" src="${card.picture.medium}" alt="profile picture">
       </div>
@@ -75,9 +77,7 @@ function generateModals(dataResults) {
 
       // Modals will be hidden until needed.
 
-      // TO DO add comments to explain classe etc... and revise class names and ids... remove some? rename some?
-
-      return `<div class="modal-container employee-${index} isResult js-searchDisplay" id="modal-${index}" style="display:none;" onclick="handleClick(event)">
+      return `<div class="modal-container employee-${index} js-result js-searchDisplay" id="modal-${index}" style="display:none;" onclick="handleClick(event)">
     <div class="modal">
         <button type="button" id="modal-close-btn" class="modal-close-btn" onclick="handleClick(event)"><strong>X</strong></button>
         <div class="modal-info-container">
@@ -110,7 +110,7 @@ searchContainer.innerHTML = `<form action="#" method="get">
   </form>`;
 
 // ------------------------------------------
-//  EVENT HANDLERS
+//  CLICK HANDLER
 // ------------------------------------------
 
 function handleClick(event) {
@@ -153,7 +153,7 @@ function handleClick(event) {
         // Is there a modal that direction?
         if (lastModal[`${direction}Sibling`] !== null) {
           // Is the modal part of the user's search term?
-          if (lastModal[`${direction}Sibling`].matches('.isResult')) {
+          if (lastModal[`${direction}Sibling`].matches('.js-result')) {
             // Found a match. Now do updates.
             modalAction.hide();
             modalAction.update(lastModal[`${direction}Sibling`]);
@@ -204,49 +204,59 @@ function handleClick(event) {
 handleClick.modalActive = false;
 handleClick.activeModal = null;
 
-// Search listener
+// ------------------------------------------
+//  FORM SUBMIT (SEARCH)
+// ------------------------------------------
+
+// Selects form.
 const form = document.querySelector('.search-container > form');
-form.addEventListener('submit', function handleSearch(event) {
+
+// Form submit listener
+form.addEventListener('submit', handleSubmit);
+
+function generateList() {
+  // List of all cards and modals. (Called once, after 'fetch'.)
+  // (querySelectorAll returns a NodeList, which has to be converted to an array.)
+  handleSubmit.cardsModalsList = Array.from(document.querySelectorAll('.js-searchDisplay'));
+}
+
+function handleSubmit(event) {
+  const action = {
+    showSearchResults(search) {
+      action.clearAll();
+      handleSubmit.cardsModalsList.forEach((element) => {
+        const nameElement = element.querySelector('.js-name');
+        // Finds matching cards and modals.
+        if (nameElement.textContent.includes(search)) {
+          // Both cards and modals
+          element.className += ' js-result';
+          if (element.matches('.card')) {
+            // Only cards
+            element.style.display = 'block';
+          }
+        }
+      });
+    },
+
+    clearAll() {
+      document.querySelectorAll('.card').forEach((card) => {
+        // Hides card.
+        card.style.display = 'none';
+        // Removes card from results.
+        card.className = card.className.replace(' js-result', '');
+      });
+      document.querySelectorAll('.modal-container').forEach((modal) => {
+        // Removes modal from results.
+        modal.className = modal.className.replace(' js-result', '');
+      });
+    },
+  };
+
   event.preventDefault();
+  // 'Elements' is the content of the form submission.
   const { elements } = this;
   const search = elements[0].value.toLowerCase();
-  showSearchResults(search);
-});
-
-let list = null;
-function generateList() {
-  // List of all cards and modals.
-  // (querySelectorAll returns a NodeList, which has to be converted to an array.)
-  list = Array.from(document.querySelectorAll('.js-searchDisplay'));
+  action.showSearchResults(search);
 }
-
-function showSearchResults(search) {
-  clearAll();
-  list.forEach((element) => {
-    const nameElement = element.querySelector('.js-name');
-    // Finds matching cards and modals.
-    if (nameElement.textContent.includes(search)) {
-      // Both cards and modals
-      element.className += ' isResult';
-      if (element.matches('.card')) {
-        // Only cards
-        element.style.display = 'block';
-      }
-    }
-  });
-}
-
-// Hides all of the cards.
-function clearAll() {
-  document.querySelectorAll('.card').forEach((card) => {
-    card.style.display = 'none';
-    card.className = card.className.replace(' isResult', '');
-  });
-  document.querySelectorAll('.modal-container').forEach((modal) => {
-    modal.className = modal.className.replace(' isResult', '');
-  });
-}
-
-// ------------------------------------------
-//  HELPER FUNCTIONS
-// ------------------------------------------
+// Static variable
+handleSubmit.cardsModalsList = null;
