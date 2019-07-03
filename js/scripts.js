@@ -71,7 +71,7 @@ function generateModals(dataResults) {
             <p class="modal-text cap">${`${city}, ${state}`}</p>
             <hr>
             <p class="modal-text">(555) 555-5555</p>
-            <p class="modal-text">${`${street}, ${city}, ${state} ${postcode}`}</p>
+            <p class="modal-text cap">${`${street}, ${city}, ${state} ${postcode}`}</p>
             <p class="modal-text">Birthday: ${dob}</p>
         </div>
     </div>
@@ -103,7 +103,6 @@ function handleClick(event) {
   // Stop event bubbling before it gets to the 'gallery' listener.
   event.stopPropagation();
   // Shows a modal.
-  // console.log(event.currentTarget);
   if (event.currentTarget.matches('.modal-close-btn')) {
     closeModalView(activeModal);
   } else if (event.currentTarget.matches('.card') && modalActive === false) {
@@ -119,16 +118,41 @@ function handleClick(event) {
   } else if (event.target.matches('#modal-prev')) {
     // TO DO  need a loop that will keep looking for
     // an element that has class of isResult
-    if (activeModal.previousSibling !== null) {
-      hideModal(activeModal);
-      activeModal = activeModal.previousSibling;
-      showModal(activeModal);
+
+    let continueModalSearch = true;
+    let lastModal = activeModal;
+    while (continueModalSearch) {
+      if (lastModal.previousSibling !== null) {
+        if (lastModal.previousSibling.matches('.isResult')) {
+          hideModal(activeModal);
+          activeModal = lastModal.previousSibling;
+          showModal(activeModal);
+          continueModalSearch = false;
+        } else {
+          lastModal = lastModal.previousSibling;
+        }
+      } else {
+        // Nothing left that direction.
+        continueModalSearch = false;
+      }
     }
   } else if (event.target.matches('#modal-next')) {
-    if (activeModal.nextSibling !== null) {
-      hideModal(activeModal);
-      activeModal = activeModal.nextSibling;
-      showModal(activeModal);
+    let continueModalSearch = true;
+    let lastModal = activeModal;
+    while (continueModalSearch) {
+      if (lastModal.nextSibling !== null) {
+        if (lastModal.nextSibling.matches('.isResult')) {
+          hideModal(activeModal);
+          activeModal = lastModal.nextSibling;
+          showModal(activeModal);
+          continueModalSearch = false;
+        } else {
+          lastModal = lastModal.nextSibling;
+        }
+      } else {
+        // Nothing left that direction.
+        continueModalSearch = false;
+      }
     }
   }
 }
@@ -160,7 +184,6 @@ form.addEventListener('submit', function handleSearch(event) {
   const { elements } = this;
   const search = elements[0].value.toLowerCase();
   showSearchResults(search);
-  // console.log(elements[0].value);
 });
 
 let list = null;
@@ -172,17 +195,11 @@ function generateList() {
 }
 
 function showSearchResults(search) {
-  console.log('***************search: ', search);
-
   clearAll();
   list.forEach((element) => {
-    console.log('element.textContent:  ', element.textContent);
     const nameElement = element.querySelector('.js-name');
-    console.log('nameElement.textContent: ', nameElement.textContent);
     // Finds matching cards and modals.
     if (nameElement.textContent.includes(search)) {
-      console.log('********* IS A MATCH *********');
-
       // Both cards and modals
       element.className += ' isResult';
       if (element.matches('.card')) {
@@ -192,11 +209,6 @@ function showSearchResults(search) {
     }
   });
 }
-
-// function handleSearch(event) {
-//   event.preventDefault();
-//   clearAll();
-// }
 
 // Hides all of the cards.
 function clearAll() {
