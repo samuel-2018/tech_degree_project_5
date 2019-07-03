@@ -45,7 +45,7 @@ function generateCards(dataResults) {
         index,
       ) => `<div class="card js-result js-searchDisplay" id="employee-${index}" onclick="handleClick(event)">
       <div class="card-img-container">
-          <img class="card-img" src="${card.picture.medium}" alt="profile picture">
+          <img class="card-img" src="${card.picture.thumbnail}" alt="profile picture">
       </div>
       <div class="card-info-container">
           <h3 id="name" class="card-name cap js-name">${`${card.name.first} ${card.name.last}`}</h3>
