@@ -1,6 +1,4 @@
-# tech_degree_project_5
-
-Project 5: Public API Requests (Tech Degree)
+# Project 5: Public API Requests (Tech Degree)
 
 ## Description
 
